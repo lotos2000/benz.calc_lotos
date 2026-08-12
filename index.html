@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор бензину</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1013; --surface:#181b20; --surface2:#20242b; --border:#2a2f37;
+    --text:#eef0f2; --text-dim:#9aa2ad; --amber:#ff9f1c; --amber-dim:#7a5219;
+    --mono:'Space Mono',monospace; --sans:'Manrope',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px;}
+  header{display:flex;align-items:center;gap:12px;margin:8px 0 24px;}
+  .gauge-mark{width:38px;height:38px;border-radius:50%;
+    background:conic-gradient(var(--amber) 0deg 260deg, var(--border) 260deg 360deg);
+    display:flex;align-items:center;justify-content:center;flex:none;}
+  .gauge-mark::after{content:"";width:26px;height:26px;border-radius:50%;background:var(--bg);}
+  h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.02em;}
+  .sub{color:var(--text-dim);font-size:13px;margin-top:2px;}
+
+  nav{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:22px;
+      background:var(--surface);padding:5px;border-radius:14px;border:1px solid var(--border);}
+  nav button{border:none;background:transparent;color:var(--text-dim);font-family:var(--sans);
+      font-weight:600;font-size:13px;padding:10px 4px;border-radius:10px;cursor:pointer;}
+  nav button.active{background:var(--amber);color:#1a1200;}
+
+  .panel{display:none;} .panel.active{display:block;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+        padding:18px;margin-bottom:14px;}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);
+        margin:0 0 12px;font-weight:700;}
+
+  .field{margin-bottom:14px;}
+  label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
+  select,input{width:100%;background:var(--surface2);border:1px solid var(--border);
+      color:var(--text);padding:11px 12px;border-radius:10px;font-family:var(--sans);
+      font-size:14px;appearance:none;}
+  select:focus,input:focus{outline:2px solid var(--amber);outline-offset:1px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .toggle button{padding:11px;border-radius:10px;border:1px solid var(--border);
+      background:var(--surface2);color:var(--text);font-family:var(--sans);font-weight:600;
+      font-size:13px;cursor:pointer;}
+  .toggle button.sel{border-color:var(--amber);background:rgba(255,159,28,.12);color:var(--amber);}
+
+  .btn{width:100%;padding:13px;border-radius:12px;border:none;background:var(--amber);
+      color:#1a1200;font-weight:800;font-size:14px;cursor:pointer;font-family:var(--sans);}
+
+  .result{background:linear-gradient(160deg,var(--surface2),var(--surface));
+      border:1px solid var(--amber-dim);border-radius:16px;padding:20px;margin-top:16px;}
+  .result .row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;
+      color:var(--text-dim);border-bottom:1px dashed var(--border);}
+  .result .row:last-of-type{border-bottom:none;}
+  .result .big{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--amber);
+      margin:12px 0 2px;}
+  .result .big-sub{color:var(--text-dim);font-size:12px;}
+  .hint{font-size:12px;color:var(--text-dim);margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="gauge-mark"></div>
+    <div>
+      <h1>Калькулятор бензину</h1>
+      <div class="sub">Просто рахує, нічого нікуди не зберігає</div>
+    </div>
+  </header>
+
+  <nav>
+    <button data-tab="calc" class="active">Розрахунок поїздки</button>
+    <button data-tab="refuel">Розрахунок заправки</button>
+  </nav>
+
+  <!-- ======= РОЗРАХУНОК ПОЇЗДКИ ======= -->
+  <section class="panel active" id="panel-calc">
+    <div class="card">
+      <h2>Маршрут</h2>
+      <div class="field">
+        <label>Машина</label>
+        <select id="c-car"></select>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Звідки</label>
+          <select id="c-from"></select>
+        </div>
+        <div class="field">
+          <label>Куди</label>
+          <select id="c-to"></select>
+        </div>
+      </div>
+      <div class="field" id="c-manual-dist-wrap" style="display:none;">
+        <label>Не знаю цю відстань — введи км (в один бік)</label>
+        <input type="number" step="0.01" id="c-manual-dist" placeholder="напр. 14.5">
+      </div>
+      <div class="field">
+        <label>Напрямок</label>
+        <div class="toggle">
+          <button data-val="one" class="dir-btn sel">В один бік</button>
+          <button data-val="round" class="dir-btn">Туди-назад</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Пальне</h2>
+      <div class="field">
+        <label>Заправка</label>
+        <div class="toggle">
+          <button data-val="UPG" class="station-btn sel">UPG</button>
+          <button data-val="BVS" class="station-btn">BVS</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Тип пального</label>
+        <div class="toggle">
+          <button data-val="газ" class="fuel-btn sel">Газ</button>
+          <button data-val="бензин" class="fuel-btn">Бензин</button>
+        </div>
+      </div>
+      <div class="field" id="c-petrol-kind-wrap" style="display:none;">
+        <label>Який бензин</label>
+        <div class="toggle">
+          <button data-val="cheap" class="petrol-btn sel">Дешевий (95 спирт.)</button>
+          <button data-val="normal" class="petrol-btn">Звичайний</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" id="c-calc-btn">Порахувати</button>
+    <div class="result" id="c-result" style="display:none;"></div>
+  </section>
+
+  <!-- ======= РОЗРАХУНОК ЗАПРАВКИ ======= -->
+  <section class="panel" id="panel-refuel">
+    <div class="card">
+      <h2>Скільки заправити</h2>
+      <div class="field">
+        <label>Машина</label>
+        <select id="r-car"></select>
+      </div>
+      <div class="field">
+        <label>Заправка</label>
+        <div class="toggle">
+          <button data-val="UPG" class="r-station-btn sel">UPG</button>
+          <button data-val="BVS" class="r-station-btn">BVS</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Тип пального</label>
+        <div class="toggle">
+          <button data-val="газ" class="r-fuel-btn sel">Газ</button>
+          <button data-val="бензин" class="r-fuel-btn">Бензин</button>
+        </div>
+      </div>
+      <div class="field" id="r-petrol-kind-wrap" style="display:none;">
+        <label>Який бензин</label>
+        <div class="toggle">
+          <button data-val="cheap" class="r-petrol-btn sel">Дешевий (95 спирт.)</button>
+          <button data-val="normal" class="r-petrol-btn">Звичайний</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Сума, грн</label>
+        <input type="number" step="0.01" id="r-amount" placeholder="напр. 500">
+      </div>
+    </div>
+    <button class="btn" id="r-calc-btn">Порахувати</button>
+    <div class="result" id="r-result" style="display:none;"></div>
+    <div class="hint">Нічого не зберігається — закрив сторінку, дані пропали. Якщо треба зберігати історію поїздок і заправок, скажи окремо, зробимо це наступним кроком.</div>
+  </section>
+</div>
+
+<script>
+// ---------- КОНФІГ (можна редагувати прямо тут) ----------
+const CARS = {
+  nissan: {title:"Nissan Sunny", газ:8.0, бензин:10.0},
+  escort: {title:"Ford Escort", газ:11.0, бензин:9.0},
+  lanos:  {title:"Lanos", газ:9.0, бензин:7.0},
+  vaz2106:{title:"ВАЗ 2106", газ:10.0, бензин:10.0},
+  vaz2107:{title:"ВАЗ 2107", газ:10.0, бензин:8.0},
+};
+const PRICES = {
+  UPG: {газ:42.90, бензин_дешевий:64.90, бензин_звичайний:81.90},
+  BVS: {газ:42.90, бензин_дешевий:64.90, бензин_звичайний:82.90},
+};
+const POINTS = ["Мозоліївка","Пронозівка","Кагамлик","Градизьк","Погреби","Максимівка","Кременчук"];
+
+function dkey(a,b){ return [a,b].sort().join(" | "); }
+const DISTANCES = {};
+function setDist(a,b,km){ DISTANCES[dkey(a,b)] = km; }
+setDist("Кременчук","Градизьк",30.0);
+setDist("Мозоліївка","Пронозівка",4.4);
+setDist("Мозоліївка","Кременчук",18.0);
+setDist("Мозоліївка","Кагамлик",12.0);
+setDist("Мозоліївка","Градизьк",15.0);
+setDist("Мозоліївка","Погреби",20.0);
+setDist("Мозоліївка","Максимівка",10.0);
+setDist("Пронозівка","Кременчук",20.0);
+setDist("Пронозівка","Кагамлик",10.0);
+setDist("Пронозівка","Градизьк",12.0);
+setDist("Пронозівка","Погреби",18.0);
+setDist("Пронозівка","Максимівка",8.0);
+setDist("Кагамлик","Кременчук",15.0);
+setDist("Кагамлик","Градизьк",10.0);
+setDist("Кагамлик","Погреби",12.0);
+setDist("Кагамлик","Максимівка",7.0);
+setDist("Градизьк","Погреби",8.0);
+setDist("Градизьк","Максимівка",12.0);
+setDist("Погреби","Кременчук",25.0);
+setDist("Погреби","Максимівка",10.0);
+setDist("Максимівка","Кременчук",22.0);
+
+function getDistance(a,b){
+  if (a===b) return 0;
+  return DISTANCES[dkey(a,b)] ?? null;
+}
+function fuelPrice(station, fuelType, petrolKind){
+  if (fuelType==="газ") return PRICES[station]["газ"];
+  return PRICES[station][petrolKind==="cheap" ? "бензин_дешевий" : "бензин_звичайний"];
+}
+function consumption(car, fuelType){ return CARS[car][fuelType]; }
+
+// ---------- СТАН ----------
+let state = {
+  car: Object.keys(CARS)[0], from: POINTS[0], to: POINTS[1], direction:"one",
+  station:"UPG", fuel:"газ", petrol:"cheap",
+  r_car: Object.keys(CARS)[0], r_station:"UPG", r_fuel:"газ", r_petrol:"cheap",
+};
+
+function fillSelect(id, entries){
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+  entries.forEach(([val,label])=>{
+    const opt = document.createElement("option");
+    opt.value = val; opt.textContent = label; el.appendChild(opt);
+  });
+}
+fillSelect("c-car", Object.entries(CARS).map(([k,v])=>[k,v.title]));
+fillSelect("r-car", Object.entries(CARS).map(([k,v])=>[k,v.title]));
+fillSelect("c-from", POINTS.map(p=>[p,p]));
+fillSelect("c-to", POINTS.map(p=>[p,p]));
+document.getElementById("c-from").value = state.from;
+document.getElementById("c-to").value = state.to;
+
+function wireToggle(selector, key, onChange){
+  document.querySelectorAll(selector).forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(selector).forEach(b=>b.classList.remove("sel"));
+      btn.classList.add("sel");
+      state[key] = btn.dataset.val;
+      if (onChange) onChange();
+    });
+  });
+}
+wireToggle(".dir-btn","direction");
+wireToggle(".station-btn","station");
+wireToggle(".fuel-btn","fuel", ()=>{
+  document.getElementById("c-petrol-kind-wrap").style.display = state.fuel==="бензин" ? "block":"none";
+});
+wireToggle(".petrol-btn","petrol");
+wireToggle(".r-station-btn","r_station");
+wireToggle(".r-fuel-btn","r_fuel", ()=>{
+  document.getElementById("r-petrol-kind-wrap").style.display = state.r_fuel==="бензин" ? "block":"none";
+});
+wireToggle(".r-petrol-btn","r_petrol");
+
+document.getElementById("c-car").addEventListener("change", e=> state.car = e.target.value);
+document.getElementById("c-from").addEventListener("change", e=> state.from = e.target.value);
+document.getElementById("c-to").addEventListener("change", e=> state.to = e.target.value);
+document.getElementById("r-car").addEventListener("change", e=> state.r_car = e.target.value);
+
+document.querySelectorAll("nav button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+  });
+});
+
+function calcTrip(manualDist){
+  let dist = manualDist !== undefined ? manualDist : getDistance(state.from, state.to);
+  if (dist === null){
+    document.getElementById("c-manual-dist-wrap").style.display = "block";
+    document.getElementById("c-result").style.display = "none";
+    return;
+  }
+  document.getElementById("c-manual-dist-wrap").style.display = "none";
+  const totalKm = dist * (state.direction==="round" ? 2 : 1);
+  const cons = consumption(state.car, state.fuel);
+  const price = fuelPrice(state.station, state.fuel, state.petrol);
+  const liters = Math.round(totalKm * cons / 100 * 100) / 100;
+  const cost = Math.round(liters * price * 100) / 100;
+  const petrolLabel = state.fuel==="газ" ? "Газ" : (state.petrol==="cheap" ? "Бензин дешевий" : "Бензин звичайний");
+
+  document.getElementById("c-result").style.display = "block";
+  document.getElementById("c-result").innerHTML = `
+    <div class="row"><span>Маршрут</span><span>${state.from} → ${state.to}</span></div>
+    <div class="row"><span>Відстань</span><span>${dist.toFixed(2)} км (всього ${totalKm.toFixed(2)} км)</span></div>
+    <div class="row"><span>Пальне</span><span>${petrolLabel}, ${state.station}</span></div>
+    <div class="row"><span>Ціна / витрата</span><span>${price.toFixed(2)} грн/л · ${cons} л/100км</span></div>
+    <div class="big">${cost.toFixed(2)} грн</div>
+    <div class="big-sub">${liters.toFixed(2)} л потрібно</div>
+  `;
+}
+
+document.getElementById("c-calc-btn").addEventListener("click", ()=> calcTrip());
+document.getElementById("c-manual-dist").addEventListener("change", (e)=>{
+  const v = parseFloat(e.target.value.replace(",","."));
+  if (!isNaN(v)) calcTrip(v);
+});
+
+document.getElementById("r-calc-btn").addEventListener("click", ()=>{
+  const amount = parseFloat(document.getElementById("r-amount").value.replace(",","."));
+  if (isNaN(amount) || amount<=0){ alert("Введи суму в гривнях"); return; }
+  const price = fuelPrice(state.r_station, state.r_fuel, state.r_petrol);
+  const cons = consumption(state.r_car, state.r_fuel);
+  const liters = Math.round(amount/price*100)/100;
+  const rangeKm = Math.round(liters*100/cons*100)/100;
+
+  document.getElementById("r-result").style.display = "block";
+  document.getElementById("r-result").innerHTML = `
+    <div class="row"><span>Куплено</span><span>${liters.toFixed(2)} л</span></div>
+    <div class="row"><span>Ціна</span><span>${price.toFixed(2)} грн/л</span></div>
+    <div class="big">${rangeKm.toFixed(2)} км</div>
+    <div class="big-sub">приблизний запас ходу</div>
+  `;
+});
+</script>
+</body>
+</html>
