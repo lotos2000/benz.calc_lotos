@@ -1,84 +1,146 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Калькулятор бензину</title>
+<title>Калькулятор бензина</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0e1013; --surface:#181b20; --surface2:#20242b; --border:#2a2f37;
-    --text:#eef0f2; --text-dim:#9aa2ad; --amber:#ff9f1c; --amber-dim:#7a5219;
+    --bg:#0b0d10; --bg2:#111419;
+    --surface:#171b21; --surface2:#1f242c; --surface3:#262c35;
+    --border:#2a303a; --border-soft:#20252d;
+    --text:#f2f4f6; --text-dim:#9aa4b2; --text-faint:#5c6472;
+    --amber:#ff9d2e; --amber-soft:#ffb85e; --amber-dim:#4a3013;
+    --green:#3ecf8e; --red:#ff5d5d;
     --mono:'Space Mono',monospace; --sans:'Manrope',sans-serif;
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
-  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px;}
-  header{display:flex;align-items:center;gap:12px;margin:8px 0 24px;}
-  .gauge-mark{width:38px;height:38px;border-radius:50%;
-    background:conic-gradient(var(--amber) 0deg 260deg, var(--border) 260deg 360deg);
-    display:flex;align-items:center;justify-content:center;flex:none;}
-  .gauge-mark::after{content:"";width:26px;height:26px;border-radius:50%;background:var(--bg);}
-  h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.02em;}
-  .sub{color:var(--text-dim);font-size:13px;margin-top:2px;}
+  body{
+    margin:0; color:var(--text); font-family:var(--sans);
+    background:
+      radial-gradient(circle at 15% 0%, rgba(255,157,46,.09), transparent 40%),
+      radial-gradient(circle at 100% 20%, rgba(62,207,142,.06), transparent 45%),
+      var(--bg);
+    min-height:100vh;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:22px 16px 70px;}
 
-  nav{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:22px;
-      background:var(--surface);padding:5px;border-radius:14px;border:1px solid var(--border);}
-  nav button{border:none;background:transparent;color:var(--text-dim);font-family:var(--sans);
-      font-weight:600;font-size:13px;padding:10px 4px;border-radius:10px;cursor:pointer;}
-  nav button.active{background:var(--amber);color:#1a1200;}
+  header{display:flex;align-items:center;gap:14px;margin:6px 0 26px;}
+  .pump{width:46px;height:46px;border-radius:14px;flex:none;
+    background:linear-gradient(155deg,var(--amber),#e8720f);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 20px -4px rgba(255,157,46,.5);}
+  .pump svg{width:24px;height:24px;}
+  h1{font-size:21px;margin:0;font-weight:800;letter-spacing:-.02em;}
+  .sub{color:var(--text-dim);font-size:12.5px;margin-top:2px;}
 
-  .panel{display:none;} .panel.active{display:block;}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
-        padding:18px;margin-bottom:14px;}
-  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);
-        margin:0 0 12px;font-weight:700;}
+  nav{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:22px;
+      background:var(--surface);padding:5px;border-radius:16px;border:1px solid var(--border-soft);}
+  nav button{border:none;background:transparent;color:var(--text-faint);font-family:var(--sans);
+      font-weight:700;font-size:11.5px;padding:11px 3px;border-radius:12px;cursor:pointer;
+      transition:.15s ease;}
+  nav button.active{background:linear-gradient(155deg,var(--amber),#e8720f);color:#1a1200;
+      box-shadow:0 4px 14px -4px rgba(255,157,46,.6);}
 
-  .field{margin-bottom:14px;}
-  label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
-  select,input{width:100%;background:var(--surface2);border:1px solid var(--border);
-      color:var(--text);padding:11px 12px;border-radius:10px;font-family:var(--sans);
-      font-size:14px;appearance:none;}
+  .panel{display:none;animation:fade .25s ease;} .panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .card{background:linear-gradient(155deg,var(--surface2),var(--surface));
+        border:1px solid var(--border);border-radius:18px;
+        padding:19px;margin-bottom:14px;}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--text-dim);
+        margin:0 0 14px;font-weight:800;display:flex;align-items:center;gap:6px;}
+  .card h2::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--amber);}
+
+  .field{margin-bottom:14px;} .field:last-child{margin-bottom:0;}
+  label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:7px;font-weight:600;}
+  select,input{width:100%;background:var(--surface3);border:1px solid var(--border);
+      color:var(--text);padding:12px 13px;border-radius:12px;font-family:var(--sans);
+      font-size:14.5px;appearance:none;}
   select:focus,input:focus{outline:2px solid var(--amber);outline-offset:1px;}
+  input::placeholder{color:var(--text-faint);}
 
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .toggle button{padding:11px;border-radius:10px;border:1px solid var(--border);
-      background:var(--surface2);color:var(--text);font-family:var(--sans);font-weight:600;
-      font-size:13px;cursor:pointer;}
-  .toggle button.sel{border-color:var(--amber);background:rgba(255,159,28,.12);color:var(--amber);}
+  .toggle button{padding:12px;border-radius:12px;border:1px solid var(--border);
+      background:var(--surface3);color:var(--text);font-family:var(--sans);font-weight:700;
+      font-size:13px;cursor:pointer;transition:.15s;}
+  .toggle button.sel{border-color:var(--amber);background:rgba(255,157,46,.13);color:var(--amber-soft);}
 
-  .btn{width:100%;padding:13px;border-radius:12px;border:none;background:var(--amber);
-      color:#1a1200;font-weight:800;font-size:14px;cursor:pointer;font-family:var(--sans);}
+  .btn{width:100%;padding:14px;border-radius:14px;border:none;
+      background:linear-gradient(155deg,var(--amber),#e8720f);
+      color:#1a1200;font-weight:800;font-size:14.5px;cursor:pointer;font-family:var(--sans);
+      box-shadow:0 6px 18px -6px rgba(255,157,46,.55);}
+  .btn.secondary{background:var(--surface3);color:var(--text);border:1px solid var(--border);
+      box-shadow:none;}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text-dim);box-shadow:none;}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  .btn.yes{background:linear-gradient(155deg,var(--green),#1f9e63);color:#052013;box-shadow:none;}
+  .btn.no{background:var(--surface3);color:var(--text);border:1px solid var(--border);box-shadow:none;}
 
-  .result{background:linear-gradient(160deg,var(--surface2),var(--surface));
-      border:1px solid var(--amber-dim);border-radius:16px;padding:20px;margin-top:16px;}
+  .result{background:linear-gradient(160deg,var(--surface3),var(--surface2));
+      border:1px solid var(--amber-dim);border-radius:18px;padding:22px;margin-top:16px;}
+  .result .leg{background:var(--surface);border:1px solid var(--border-soft);border-radius:12px;
+      padding:11px 13px;margin-bottom:8px;font-size:12.5px;color:var(--text-dim);}
+  .result .leg b{color:var(--text);}
   .result .row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;
       color:var(--text-dim);border-bottom:1px dashed var(--border);}
   .result .row:last-of-type{border-bottom:none;}
-  .result .big{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--amber);
+  .result .big{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--amber-soft);
       margin:12px 0 2px;}
   .result .big-sub{color:var(--text-dim);font-size:12px;}
-  .hint{font-size:12px;color:var(--text-dim);margin-top:10px;}
+  .hint{font-size:12px;color:var(--text-faint);margin-top:10px;line-height:1.5;}
+
+  .list-item{background:var(--surface3);border:1px solid var(--border);border-radius:12px;
+      padding:12px 14px;margin-bottom:8px;font-size:13px;}
+  .list-item .top{display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;}
+  .list-item .meta{color:var(--text-dim);font-family:var(--mono);font-size:11.5px;}
+  .empty{color:var(--text-faint);font-size:13px;text-align:center;padding:26px 0;}
+
+  .vol-car{margin-bottom:16px;}
+  .vol-car .name{font-weight:700;margin-bottom:8px;font-size:14px;}
+  .vol-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .vol-bar-row .label{width:64px;font-size:12px;color:var(--text-dim);}
+  .vol-bar-track{flex:1;height:9px;background:var(--surface3);border-radius:5px;overflow:hidden;}
+  .vol-bar-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-soft));}
+  .vol-bar-fill.neg{background:var(--red);}
+  .vol-num{font-family:var(--mono);font-size:12px;width:60px;text-align:right;}
+  .vol-edit-row{display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:center;margin-bottom:8px;}
+  .vol-edit-row label{margin:0;}
+
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
+      background:rgba(62,207,142,.15);color:var(--green);margin-left:6px;}
+  .badge.err{background:rgba(255,93,93,.15);color:var(--red);}
+
+  .divider{border:none;border-top:1px solid var(--border-soft);margin:16px 0;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="gauge-mark"></div>
+    <div class="pump">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1a1200" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 22V8a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14"/><path d="M3 22h10"/>
+        <path d="M13 8h2l3 3v7a1.5 1.5 0 0 1-3 0v-2a1 1 0 0 0-1-1h-1"/>
+        <path d="M7 5V3"/>
+      </svg>
+    </div>
     <div>
-      <h1>Калькулятор бензину</h1>
-      <div class="sub">Просто рахує, нічого нікуди не зберігає</div>
+      <h1>Калькулятор бензина</h1>
+      <div class="sub">Поездки · заправки · учёт топлива в машинах</div>
     </div>
   </header>
 
   <nav>
-    <button data-tab="calc" class="active">Розрахунок поїздки</button>
-    <button data-tab="refuel">Розрахунок заправки</button>
+    <button data-tab="calc" class="active">Поездка</button>
+    <button data-tab="refuel">Заправка</button>
+    <button data-tab="volume">Топливо</button>
+    <button data-tab="settings">Настройки</button>
   </nav>
 
-  <!-- ======= РОЗРАХУНОК ПОЇЗДКИ ======= -->
+  <!-- ======= ПОЕЗДКА ======= -->
   <section class="panel active" id="panel-calc">
     <div class="card">
       <h2>Маршрут</h2>
@@ -88,29 +150,25 @@
       </div>
       <div class="grid2">
         <div class="field">
-          <label>Звідки</label>
+          <label>Откуда</label>
           <select id="c-from"></select>
         </div>
         <div class="field">
-          <label>Куди</label>
+          <label>Куда</label>
           <select id="c-to"></select>
         </div>
       </div>
-      <div class="field" id="c-manual-dist-wrap" style="display:none;">
-        <label>Не знаю цю відстань — введи км (в один бік)</label>
-        <input type="number" step="0.01" id="c-manual-dist" placeholder="напр. 14.5">
-      </div>
       <div class="field">
-        <label>Напрямок</label>
+        <label>Направление</label>
         <div class="toggle">
-          <button data-val="one" class="dir-btn sel">В один бік</button>
-          <button data-val="round" class="dir-btn">Туди-назад</button>
+          <button data-val="one" class="dir-btn sel">В одну сторону</button>
+          <button data-val="round" class="dir-btn">Туда-обратно</button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>Пальне</h2>
+      <h2>Топливо</h2>
       <div class="field">
         <label>Заправка</label>
         <div class="toggle">
@@ -119,29 +177,56 @@
         </div>
       </div>
       <div class="field">
-        <label>Тип пального</label>
+        <label>Тип топлива</label>
         <div class="toggle">
           <button data-val="газ" class="fuel-btn sel">Газ</button>
           <button data-val="бензин" class="fuel-btn">Бензин</button>
         </div>
       </div>
       <div class="field" id="c-petrol-kind-wrap" style="display:none;">
-        <label>Який бензин</label>
+        <label>Какой бензин</label>
         <div class="toggle">
-          <button data-val="cheap" class="petrol-btn sel">Дешевий (95 спирт.)</button>
-          <button data-val="normal" class="petrol-btn">Звичайний</button>
+          <button data-val="cheap" class="petrol-btn sel">Дешёвый (95 спирт.)</button>
+          <button data-val="normal" class="petrol-btn">Обычный</button>
         </div>
       </div>
     </div>
 
-    <button class="btn" id="c-calc-btn">Порахувати</button>
+    <button class="btn" id="c-calc-btn">Посчитать</button>
     <div class="result" id="c-result" style="display:none;"></div>
+
+    <div id="c-refuel-ask-wrap" style="display:none;">
+      <div class="hint" style="margin-top:16px;margin-bottom:0;">Едем в Градижск заправиться?</div>
+      <div class="btn-row">
+        <button class="btn yes" id="c-refuel-yes-btn">Да</button>
+        <button class="btn no" id="c-refuel-no-btn">Нет</button>
+      </div>
+    </div>
+
+    <div class="card" id="c-refuel-amount-wrap" style="display:none;margin-top:14px;">
+      <h2>На сколько заправляемся</h2>
+      <div class="field">
+        <label>Сумма, грн</label>
+        <input type="number" step="0.01" id="c-refuel-amount" placeholder="например 500">
+      </div>
+      <button class="btn secondary" id="c-refuel-calc-btn">Посчитать</button>
+    </div>
+
+    <div class="result" id="c-refuel-result" style="display:none;"></div>
+    <div class="btn-row" id="c-refuel-confirm-wrap" style="display:none;">
+      <button class="btn yes" id="c-refuel-save-btn">Сохранить и отправить отчёт</button>
+      <button class="btn no" id="c-refuel-cancel-btn">Отмена</button>
+    </div>
+
+    <button class="btn secondary" id="c-save-btn" style="display:none;margin-top:10px;">Сохранить поездку без заправки (списать топливо)</button>
+    <div id="c-status" class="hint"></div>
+    <div class="hint">Маршрут: прямая поездка считается отдельно от заезда в Градижск на заправку, плюс общий итог.</div>
   </section>
 
-  <!-- ======= РОЗРАХУНОК ЗАПРАВКИ ======= -->
+  <!-- ======= ЗАПРАВКА ======= -->
   <section class="panel" id="panel-refuel">
     <div class="card">
-      <h2>Скільки заправити</h2>
+      <h2>Сколько заправляем</h2>
       <div class="field">
         <label>Машина</label>
         <select id="r-car"></select>
@@ -154,85 +239,183 @@
         </div>
       </div>
       <div class="field">
-        <label>Тип пального</label>
+        <label>Тип топлива</label>
         <div class="toggle">
           <button data-val="газ" class="r-fuel-btn sel">Газ</button>
           <button data-val="бензин" class="r-fuel-btn">Бензин</button>
         </div>
       </div>
       <div class="field" id="r-petrol-kind-wrap" style="display:none;">
-        <label>Який бензин</label>
+        <label>Какой бензин</label>
         <div class="toggle">
-          <button data-val="cheap" class="r-petrol-btn sel">Дешевий (95 спирт.)</button>
-          <button data-val="normal" class="r-petrol-btn">Звичайний</button>
+          <button data-val="cheap" class="r-petrol-btn sel">Дешёвый (95 спирт.)</button>
+          <button data-val="normal" class="r-petrol-btn">Обычный</button>
         </div>
       </div>
       <div class="field">
-        <label>Сума, грн</label>
-        <input type="number" step="0.01" id="r-amount" placeholder="напр. 500">
+        <label>Сумма, грн</label>
+        <input type="number" step="0.01" id="r-amount" placeholder="например 500">
       </div>
     </div>
-    <button class="btn" id="r-calc-btn">Порахувати</button>
+    <button class="btn" id="r-calc-btn">Посчитать</button>
+
     <div class="result" id="r-result" style="display:none;"></div>
-    <div class="hint">Нічого не зберігається — закрив сторінку, дані пропали. Якщо треба зберігати історію поїздок і заправок, скажи окремо, зробимо це наступним кроком.</div>
+
+    <div id="r-confirm-wrap" style="display:none;">
+      <div class="hint" style="margin-top:16px;margin-bottom:0;">Заправляемся?</div>
+      <div class="btn-row">
+        <button class="btn yes" id="r-yes-btn">Да, заправляемся</button>
+        <button class="btn no" id="r-no-btn">Нет</button>
+      </div>
+    </div>
+    <div id="r-status" class="hint"></div>
+  </section>
+
+  <!-- ======= ТОПЛИВО ======= -->
+  <section class="panel" id="panel-volume">
+    <div class="card">
+      <h2>Текущий объём в машинах</h2>
+      <div id="volume-view"></div>
+    </div>
+    <div class="card">
+      <h2>Задать вручную</h2>
+      <div id="volume-edit"></div>
+      <button class="btn secondary" id="vol-save-btn" style="margin-top:6px;">Сохранить объём</button>
+    </div>
+    <div class="card">
+      <h2>История</h2>
+      <div id="history-list"></div>
+    </div>
+  </section>
+
+  <!-- ======= НАСТРОЙКИ ======= -->
+  <section class="panel" id="panel-settings">
+    <div class="card">
+      <h2>Telegram-отчёты</h2>
+      <div class="field">
+        <label>Chat ID получателей (по одному в строке)</label>
+        <textarea id="s-chatids" rows="8" style="width:100%;background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:12px 13px;border-radius:12px;font-family:var(--mono);font-size:13px;resize:vertical;"></textarea>
+      </div>
+      <button class="btn secondary" id="s-save-btn">Сохранить</button>
+      <div class="hint">
+        Узнать свой Chat ID: напиши боту в Telegram что угодно, затем открой в браузере
+        <code>https://api.telegram.org/bot&lt;ТОКЕН&gt;/getUpdates</code> — там будет
+        поле <code>chat</code> → <code>id</code>.
+      </div>
+    </div>
+    <div class="card">
+      <h2>Данные хранятся локально</h2>
+      <div class="hint">
+        Всё (объём топлива, история) сохраняется в этом браузере на этом устройстве
+        (localStorage). Если откроешь сайт с другого устройства или в режиме инкогнито —
+        данных там не будет. Кнопка ниже полностью очищает всё.
+      </div>
+      <button class="btn ghost" id="clear-all-btn" style="margin-top:10px;">Очистить все данные</button>
+    </div>
   </section>
 </div>
 
 <script>
-// ---------- КОНФІГ (можна редагувати прямо тут) ----------
+// =====================================================================
+//  КОНФИГ (правь прямо тут)
+// =====================================================================
+const TELEGRAM_BOT_TOKEN = "8838990083:AAHcOYNkfq9QB0mjA7jInAWT78VH1IhC_No";
+
 const CARS = {
-  nissan: {title:"Nissan Sunny", газ:8.0, бензин:10.0},
-  escort: {title:"Ford Escort", газ:11.0, бензин:9.0},
-  lanos:  {title:"Lanos", газ:9.0, бензин:7.0},
-  vaz2106:{title:"ВАЗ 2106", газ:10.0, бензин:10.0},
-  vaz2107:{title:"ВАЗ 2107", газ:10.0, бензин:8.0},
+  nissan:  {title:"Nissan Sunny", газ:8.0,  бензин:10.0},
+  escort:  {title:"Ford Escort",  газ:11.0, бензин:9.0},
+  lanos:   {title:"Lanos",        газ:9.0,  бензин:7.0},
+  vaz2106: {title:"ВАЗ 2106",     газ:10.0, бензин:10.0},
+  vaz2107: {title:"ВАЗ 2107",     газ:10.0, бензин:8.0},
 };
 const PRICES = {
-  UPG: {газ:42.90, бензин_дешевий:64.90, бензин_звичайний:81.90},
-  BVS: {газ:42.90, бензин_дешевий:64.90, бензин_звичайний:82.90},
+  UPG: {газ:42.90, бензин_дешевый:64.90, бензин_обычный:81.90},
+  BVS: {газ:42.90, бензин_дешевый:64.90, бензин_обычный:82.90},
 };
-const POINTS = ["Мозоліївка","Пронозівка","Кагамлик","Градизьк","Погреби","Максимівка","Кременчук"];
+const POINTS = ["Мозолиевка","Пронозовка","Кагамлык","Градижск","Погребы","Максимовка","Кременчуг"];
+const HUB = "Градижск"; // сюда всегда заезжаем заправляться
 
+// Расстояния между пунктами, км (ПРАВЬ ТУТ, если знаешь точнее).
+// Ключ - пара пунктов через " | " в алфавитном порядке (см. dkey).
 function dkey(a,b){ return [a,b].sort().join(" | "); }
 const DISTANCES = {};
 function setDist(a,b,km){ DISTANCES[dkey(a,b)] = km; }
-setDist("Кременчук","Градизьк",30.0);
-setDist("Мозоліївка","Пронозівка",4.4);
-setDist("Мозоліївка","Кременчук",18.0);
-setDist("Мозоліївка","Кагамлик",12.0);
-setDist("Мозоліївка","Градизьк",15.0);
-setDist("Мозоліївка","Погреби",20.0);
-setDist("Мозоліївка","Максимівка",10.0);
-setDist("Пронозівка","Кременчук",20.0);
-setDist("Пронозівка","Кагамлик",10.0);
-setDist("Пронозівка","Градизьк",12.0);
-setDist("Пронозівка","Погреби",18.0);
-setDist("Пронозівка","Максимівка",8.0);
-setDist("Кагамлик","Кременчук",15.0);
-setDist("Кагамлик","Градизьк",10.0);
-setDist("Кагамлик","Погреби",12.0);
-setDist("Кагамлик","Максимівка",7.0);
-setDist("Градизьк","Погреби",8.0);
-setDist("Градизьк","Максимівка",12.0);
-setDist("Погреби","Кременчук",25.0);
-setDist("Погреби","Максимівка",10.0);
-setDist("Максимівка","Кременчук",22.0);
+setDist("Кременчуг","Градижск",34.2);
+setDist("Мозолиевка","Пронозовка",6.7);
+setDist("Мозолиевка","Кременчуг",54.0);
+setDist("Мозолиевка","Кагамлык",12.0);
+setDist("Мозолиевка","Градижск",20.0);
+setDist("Мозолиевка","Погребы",25.0);
+setDist("Мозолиевка","Максимовка",27.7);
+setDist("Пронозовка","Кременчуг",48.2);
+setDist("Пронозовка","Кагамлык",6.0);
+setDist("Пронозовка","Градижск",16.2);
+setDist("Пронозовка","Погребы",30.1);
+setDist("Пронозовка","Максимовка",24.1);
+setDist("Кагамлык","Кременчуг",41.3);
+setDist("Кагамлык","Градижск",9.7);
+setDist("Кагамлык","Погребы",23.6);
+setDist("Кагамлык","Максимовка",17.5);
+setDist("Градижск","Погребы",16.6);
+setDist("Градижск","Максимовка",10.5);
+setDist("Погребы","Кременчуг",24.6);
+setDist("Погребы","Максимовка",21.2);
+setDist("Максимовка","Кременчуг",29.3);
 
 function getDistance(a,b){
   if (a===b) return 0;
-  return DISTANCES[dkey(a,b)] ?? null;
+  return DISTANCES[dkey(a,b)] ?? 0; // 0, если пара ещё не задана - пришли мне точные км, впишу
 }
+function distToHub(point){ return getDistance(point, HUB); }
+
 function fuelPrice(station, fuelType, petrolKind){
   if (fuelType==="газ") return PRICES[station]["газ"];
-  return PRICES[station][petrolKind==="cheap" ? "бензин_дешевий" : "бензин_звичайний"];
+  return PRICES[station][petrolKind==="cheap" ? "бензин_дешевый" : "бензин_обычный"];
 }
 function consumption(car, fuelType){ return CARS[car][fuelType]; }
 
-// ---------- СТАН ----------
+// =====================================================================
+//  ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ("БД" в браузере)
+// =====================================================================
+const LS_KEY_VOLUME = "gasCalc_fuelVolume";   // {carKey: {газ: n, бензин: n}}
+const LS_KEY_HISTORY = "gasCalc_history";     // [{type, ...}]
+const LS_KEY_SETTINGS = "gasCalc_settings";   // {chatId}
+
+function loadJSON(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e){ return fallback; }
+}
+function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+function getVolumes(){ return loadJSON(LS_KEY_VOLUME, {}); }
+function setVolumes(v){ saveJSON(LS_KEY_VOLUME, v); }
+function adjustVolume(car, fuelType, delta){
+  const v = getVolumes();
+  if (!v[car]) v[car] = {"газ":0, "бензин":0};
+  v[car][fuelType] = Math.round(((v[car][fuelType]||0) + delta) * 100) / 100;
+  setVolumes(v);
+}
+function getHistory(){ return loadJSON(LS_KEY_HISTORY, []); }
+function pushHistory(entry){
+  const h = getHistory();
+  h.unshift(entry);
+  saveJSON(LS_KEY_HISTORY, h.slice(0, 50));
+}
+function getSettings(){
+  return loadJSON(LS_KEY_SETTINGS, {
+    chatIds: ["8272212055","7863694485","1454827641","7825788588","8951268018","5974961863","1173561765"]
+  });
+}
+function setSettings(s){ saveJSON(LS_KEY_SETTINGS, s); }
+
+// =====================================================================
+//  СОСТОЯНИЕ ИНТЕРФЕЙСА
+// =====================================================================
 let state = {
-  car: Object.keys(CARS)[0], from: POINTS[0], to: POINTS[1], direction:"one",
+  car: Object.keys(CARS)[0], from: POINTS[0], to: POINTS[2], direction:"one",
   station:"UPG", fuel:"газ", petrol:"cheap",
   r_car: Object.keys(CARS)[0], r_station:"UPG", r_fuel:"газ", r_petrol:"cheap",
+  lastTrip: null, lastRefuel: null,
 };
 
 function fillSelect(id, entries){
@@ -283,57 +466,339 @@ document.querySelectorAll("nav button").forEach(btn=>{
     document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "volume") renderVolumeTab();
+    if (btn.dataset.tab === "settings") renderSettingsTab();
   });
 });
 
-function calcTrip(manualDist){
-  let dist = manualDist !== undefined ? manualDist : getDistance(state.from, state.to);
-  if (dist === null){
-    document.getElementById("c-manual-dist-wrap").style.display = "block";
-    document.getElementById("c-result").style.display = "none";
-    return;
-  }
-  document.getElementById("c-manual-dist-wrap").style.display = "none";
-  const totalKm = dist * (state.direction==="round" ? 2 : 1);
+// =====================================================================
+//  РАСЧЁТ ПОЕЗДКИ (всегда через Градижск)
+// =====================================================================
+function calcTrip(){
+  const mult = state.direction === "round" ? 2 : 1;
   const cons = consumption(state.car, state.fuel);
   const price = fuelPrice(state.station, state.fuel, state.petrol);
-  const liters = Math.round(totalKm * cons / 100 * 100) / 100;
-  const cost = Math.round(liters * price * 100) / 100;
-  const petrolLabel = state.fuel==="газ" ? "Газ" : (state.petrol==="cheap" ? "Бензин дешевий" : "Бензин звичайний");
+  const petrolLabel = state.fuel==="газ" ? "Газ" : (state.petrol==="cheap" ? "Бензин дешёвый" : "Бензин обычный");
+
+  // 1) Прямая поездка from -> to (без заезда на заправку)
+  const directKm = Math.round(getDistance(state.from, state.to) * mult * 100) / 100;
+  const directLiters = Math.round(directKm * cons / 100 * 100) / 100;
+  const directCost = Math.round(directLiters * price * 100) / 100;
+
+  // 2) Отдельно заезд в Градижск заправиться: from -> Градижск -> to
+  const legFromKm = Math.round(distToHub(state.from) * mult * 100) / 100;
+  const legToKm = Math.round(distToHub(state.to) * mult * 100) / 100;
+  const hubKm = Math.round((legFromKm + legToKm) * 100) / 100;
+  const hubLiters = Math.round(hubKm * cons / 100 * 100) / 100;
+  const hubCost = Math.round(hubLiters * price * 100) / 100;
+
+  // 3) Всё вместе
+  const totalKm = Math.round((directKm + hubKm) * 100) / 100;
+  const totalLiters = Math.round((directLiters + hubLiters) * 100) / 100;
+  const totalCost = Math.round((directCost + hubCost) * 100) / 100;
+
+  state.lastTrip = {
+    car: state.car, from: state.from, to: state.to, direction: state.direction,
+    fuel: state.fuel, petrol: state.petrol, station: state.station,
+    totalKm: totalKm, liters: totalLiters, cost: totalCost, price, cons,
+  };
 
   document.getElementById("c-result").style.display = "block";
   document.getElementById("c-result").innerHTML = `
-    <div class="row"><span>Маршрут</span><span>${state.from} → ${state.to}</span></div>
-    <div class="row"><span>Відстань</span><span>${dist.toFixed(2)} км (всього ${totalKm.toFixed(2)} км)</span></div>
-    <div class="row"><span>Пальне</span><span>${petrolLabel}, ${state.station}</span></div>
-    <div class="row"><span>Ціна / витрата</span><span>${price.toFixed(2)} грн/л · ${cons} л/100км</span></div>
-    <div class="big">${cost.toFixed(2)} грн</div>
-    <div class="big-sub">${liters.toFixed(2)} л потрібно</div>
-  `;
-}
+    <div class="row" style="border-bottom:none;padding-bottom:2px;"><span style="font-weight:700;color:var(--text);">Поездка: ${state.from} → ${state.to}</span></div>
+    <div class="row"><span>Расстояние / расход</span><span>${directKm.toFixed(2)} км · ${directLiters.toFixed(2)} л</span></div>
+    <div class="row"><span>Стоимость</span><span>${directCost.toFixed(2)} грн</span></div>
 
-document.getElementById("c-calc-btn").addEventListener("click", ()=> calcTrip());
-document.getElementById("c-manual-dist").addEventListener("change", (e)=>{
-  const v = parseFloat(e.target.value.replace(",","."));
-  if (!isNaN(v)) calcTrip(v);
+    <hr class="divider">
+    <div class="row" style="border-bottom:none;padding-bottom:2px;"><span style="font-weight:700;color:var(--text);">Заезд в Градижск заправиться</span></div>
+    <div class="leg">${state.from} → <b>${HUB}</b>: ${legFromKm.toFixed(2)} км</div>
+    <div class="leg"><b>${HUB}</b> → ${state.to}: ${legToKm.toFixed(2)} км</div>
+    <div class="row"><span>Расстояние / расход</span><span>${hubKm.toFixed(2)} км · ${hubLiters.toFixed(2)} л</span></div>
+    <div class="row"><span>Стоимость</span><span>${hubCost.toFixed(2)} грн</span></div>
+
+    <hr class="divider">
+    <div class="row"><span>Топливо</span><span>${petrolLabel}, ${state.station}</span></div>
+    <div class="row"><span>Цена / расход</span><span>${price.toFixed(2)} грн/л · ${cons} л/100км</span></div>
+    <div class="big">${totalCost.toFixed(2)} грн</div>
+    <div class="big-sub">Всего: ${totalKm.toFixed(2)} км · ${totalLiters.toFixed(2)} л</div>
+  `;
+  document.getElementById("c-save-btn").style.display = "block";
+  document.getElementById("c-refuel-ask-wrap").style.display = "block";
+  document.getElementById("c-refuel-amount-wrap").style.display = "none";
+  document.getElementById("c-refuel-result").style.display = "none";
+  document.getElementById("c-refuel-confirm-wrap").style.display = "none";
+  document.getElementById("c-status").textContent = "";
+}
+document.getElementById("c-calc-btn").addEventListener("click", calcTrip);
+
+document.getElementById("c-refuel-no-btn").addEventListener("click", ()=>{
+  document.getElementById("c-refuel-ask-wrap").style.display = "none";
+});
+document.getElementById("c-refuel-yes-btn").addEventListener("click", ()=>{
+  document.getElementById("c-refuel-ask-wrap").style.display = "none";
+  document.getElementById("c-refuel-amount-wrap").style.display = "block";
 });
 
-document.getElementById("r-calc-btn").addEventListener("click", ()=>{
+document.getElementById("c-refuel-calc-btn").addEventListener("click", ()=>{
+  const amount = parseFloat(document.getElementById("c-refuel-amount").value.replace(",","."));
+  if (isNaN(amount) || amount<=0){ alert("Введи сумму в гривнах"); return; }
+
+  const t = state.lastTrip;
+  const boughtLiters = Math.round(amount / t.price * 100) / 100;
+
+  const vols = getVolumes();
+  const before = (vols[t.car] && vols[t.car][t.fuel]) || 0;
+  const afterTrip = Math.round((before - t.liters) * 100) / 100; // остаток после того, как проехали (до заправки)
+  const afterRefuel = Math.round((afterTrip + boughtLiters) * 100) / 100; // остаток после заправки
+  const rangeLeft = Math.round(afterRefuel * 100 / t.cons * 100) / 100;
+
+  state.lastTripRefuel = { amount, boughtLiters, before, afterTrip, afterRefuel, rangeLeft };
+
+  document.getElementById("c-refuel-result").style.display = "block";
+  document.getElementById("c-refuel-result").innerHTML = `
+    <div class="row"><span>Было в баке</span><span>${before.toFixed(2)} л</span></div>
+    <div class="row"><span>Потратится на поездку</span><span>−${t.liters.toFixed(2)} л</span></div>
+    <div class="row"><span>Куплено на ${amount.toFixed(2)} грн</span><span>+${boughtLiters.toFixed(2)} л</span></div>
+    <div class="big">${afterRefuel.toFixed(2)} л</div>
+    <div class="big-sub">останется в баке после поездки и заправки · хватит ~${rangeLeft.toFixed(2)} км</div>
+  `;
+  document.getElementById("c-refuel-confirm-wrap").style.display = "grid";
+});
+
+document.getElementById("c-refuel-cancel-btn").addEventListener("click", ()=>{
+  document.getElementById("c-refuel-confirm-wrap").style.display = "none";
+  document.getElementById("c-refuel-result").style.display = "none";
+  document.getElementById("c-status").textContent = "Заправка отменена, расчёт поездки остался как есть.";
+});
+
+document.getElementById("c-refuel-save-btn").addEventListener("click", async ()=>{
+  const t = state.lastTrip;
+  const r = state.lastTripRefuel;
+
+  setVolumes((()=>{ const v=getVolumes(); if(!v[t.car]) v[t.car]={"газ":0,"бензин":0};
+    v[t.car][t.fuel] = r.afterRefuel; return v; })());
+
+  pushHistory({ type:"trip", ts: Date.now(), car:t.car, from:t.from, to:t.to,
+    direction:t.direction, liters:t.liters, cost:t.cost, totalKm:t.totalKm });
+  pushHistory({ type:"refuel", ts: Date.now(), car:t.car, station:t.station, fuel:t.fuel,
+    petrol:t.petrol, amount:r.amount, liters:r.boughtLiters, rangeKm:r.rangeLeft });
+
+  document.getElementById("c-refuel-confirm-wrap").style.display = "none";
+  document.getElementById("c-status").textContent = "Сохранено, отправляю отчёт в Telegram...";
+
+  const petrolLabel = t.fuel==="газ" ? "Газ" : (t.petrol==="cheap" ? "Бензин дешёвый" : "Бензин обычный");
+  const text =
+    `🚗⛽ <b>Поездка + заправка</b>\n` +
+    `Машина: ${CARS[t.car].title}\n` +
+    `Маршрут: ${t.from} → ${t.to} (через Градижск)\n` +
+    `Потрачено на поездку: ${t.liters.toFixed(2)} л (${t.cost.toFixed(2)} грн)\n` +
+    `Заправка: ${t.station}, ${petrolLabel}\n` +
+    `Заправились на: ${r.amount.toFixed(2)} грн (${r.boughtLiters.toFixed(2)} л)\n` +
+    `Останется в баке: ${r.afterRefuel.toFixed(2)} л (хватит ~${r.rangeLeft.toFixed(2)} км)`;
+
+  const res = await sendTelegramReport(text);
+  document.getElementById("c-status").textContent = res.ok
+    ? `Готово — объём обновлён, отчёт отправлен (${res.count} получат.)`
+    : "Объём обновлён, но отчёт не отправился: " + res.error;
+
+  document.getElementById("c-save-btn").style.display = "none";
+});
+
+document.getElementById("c-save-btn").addEventListener("click", ()=>{
+  const t = state.lastTrip;
+  adjustVolume(t.car, t.fuel, -t.liters);
+  pushHistory({
+    type:"trip", ts: Date.now(),
+    car: t.car, from: t.from, to: t.to, direction: t.direction,
+    liters: t.liters, cost: t.cost, totalKm: t.totalKm,
+  });
+  document.getElementById("c-status").textContent = "Поездка сохранена (без заправки), объём обновлён.";
+});
+
+// =====================================================================
+//  РАСЧЁТ ЗАПРАВКИ + ПОДТВЕРЖДЕНИЕ + TELEGRAM
+// =====================================================================
+function calcRefuel(){
   const amount = parseFloat(document.getElementById("r-amount").value.replace(",","."));
-  if (isNaN(amount) || amount<=0){ alert("Введи суму в гривнях"); return; }
+  if (isNaN(amount) || amount<=0){ alert("Введи сумму в гривнах"); return; }
+
   const price = fuelPrice(state.r_station, state.r_fuel, state.r_petrol);
   const cons = consumption(state.r_car, state.r_fuel);
   const liters = Math.round(amount/price*100)/100;
   const rangeKm = Math.round(liters*100/cons*100)/100;
 
+  state.lastRefuel = { car: state.r_car, station: state.r_station, fuel: state.r_fuel,
+    petrol: state.r_petrol, amount, price, liters, rangeKm };
+
   document.getElementById("r-result").style.display = "block";
   document.getElementById("r-result").innerHTML = `
     <div class="row"><span>Куплено</span><span>${liters.toFixed(2)} л</span></div>
-    <div class="row"><span>Ціна</span><span>${price.toFixed(2)} грн/л</span></div>
+    <div class="row"><span>Цена</span><span>${price.toFixed(2)} грн/л</span></div>
     <div class="big">${rangeKm.toFixed(2)} км</div>
-    <div class="big-sub">приблизний запас ходу</div>
+    <div class="big-sub">приблизительный запас хода</div>
   `;
+  document.getElementById("r-confirm-wrap").style.display = "block";
+  document.getElementById("r-status").textContent = "";
+}
+document.getElementById("r-calc-btn").addEventListener("click", calcRefuel);
+
+document.getElementById("r-no-btn").addEventListener("click", ()=>{
+  document.getElementById("r-confirm-wrap").style.display = "none";
+  document.getElementById("r-status").textContent = "Расчёт оставлен как есть, никуда не отправлено.";
 });
+
+document.getElementById("r-yes-btn").addEventListener("click", async ()=>{
+  const r = state.lastRefuel;
+  adjustVolume(r.car, r.fuel, r.liters);
+  pushHistory({
+    type:"refuel", ts: Date.now(),
+    car: r.car, station: r.station, fuel: r.fuel, petrol: r.petrol,
+    amount: r.amount, liters: r.liters, rangeKm: r.rangeKm,
+  });
+  document.getElementById("r-confirm-wrap").style.display = "none";
+  document.getElementById("r-status").textContent = "Сохранено, отправляю отчёт в Telegram...";
+
+  const petrolLabel = r.fuel==="газ" ? "Газ" : (r.petrol==="cheap" ? "Бензин дешёвый" : "Бензин обычный");
+  const text =
+    `⛽ <b>Заправка</b>\n` +
+    `Машина: ${CARS[r.car].title}\n` +
+    `Заправка: ${r.station}\n` +
+    `Топливо: ${petrolLabel}\n` +
+    `Сумма: ${r.amount.toFixed(2)} грн\n` +
+    `Куплено: ${r.liters.toFixed(2)} л\n` +
+    `Запас хода: ~${r.rangeKm.toFixed(2)} км`;
+
+  const ok = await sendTelegramReport(text);
+  document.getElementById("r-status").textContent = ok.ok
+    ? "Объём обновлён, запрос на отправку в Telegram ушёл — проверь сообщение в самом Telegram."
+    : "Объём обновлён, но отчёт не отправился: " + ok.error;
+});
+
+async function sendTelegramReport(text){
+  const chatIds = (getSettings().chatIds || []).filter(Boolean);
+  if (!chatIds.length) return {ok:false, error:"Chat ID не заданы"};
+  // Отправка через <img>, а не fetch - так браузер не блокирует запрос,
+  // даже если сайт открыт напрямую из файла (file://) без сервера.
+  const sends = chatIds.map(chatId => new Promise((resolve)=>{
+    const params = new URLSearchParams({chat_id: chatId, text, parse_mode:"HTML"});
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?${params.toString()}`;
+    const img = new Image();
+    let done = false;
+    const finish = () => { if (!done){ done = true; resolve(); } };
+    img.onload = finish;
+    img.onerror = finish;
+    img.src = url;
+    setTimeout(finish, 2000);
+  }));
+  await Promise.all(sends);
+  return {ok:true, unverified:true, count: chatIds.length};
+}
+
+// =====================================================================
+//  ВКЛАДКА «ТОПЛИВО»
+// =====================================================================
+function renderVolumeTab(){
+  const vols = getVolumes();
+  const viewEl = document.getElementById("volume-view");
+  const carsWithData = Object.keys(CARS).filter(c => vols[c]);
+  if (!carsWithData.length){
+    viewEl.innerHTML = '<div class="empty">Данных ещё нет</div>';
+  } else {
+    viewEl.innerHTML = "";
+    carsWithData.forEach(car=>{
+      const g = vols[car]["газ"]||0, b = vols[car]["бензин"]||0;
+      const row = (label, val) => {
+        const pct = Math.max(0, Math.min(100, (val/50)*100));
+        const neg = val < 0 ? "neg" : "";
+        return `<div class="vol-bar-row">
+          <div class="label">${label}</div>
+          <div class="vol-bar-track"><div class="vol-bar-fill ${neg}" style="width:${pct}%"></div></div>
+          <div class="vol-num">${val.toFixed(2)} л</div>
+        </div>`;
+      };
+      viewEl.innerHTML += `<div class="vol-car"><div class="name">${CARS[car].title}</div>${row("газ",g)}${row("бензин",b)}</div>`;
+    });
+  }
+
+  const editEl = document.getElementById("volume-edit");
+  editEl.innerHTML = "";
+  Object.entries(CARS).forEach(([car, info])=>{
+    const g = (vols[car] && vols[car]["газ"]) || 0;
+    const b = (vols[car] && vols[car]["бензин"]) || 0;
+    editEl.innerHTML += `
+      <div class="vol-edit-row"><label>${info.title} — газ, л</label>
+        <input type="number" step="0.01" class="vol-input" data-car="${car}" data-fuel="газ" value="${g}"></div>
+      <div class="vol-edit-row"><label>${info.title} — бензин, л</label>
+        <input type="number" step="0.01" class="vol-input" data-car="${car}" data-fuel="бензин" value="${b}"></div>
+    `;
+  });
+
+  const histEl = document.getElementById("history-list");
+  const hist = getHistory();
+  if (!hist.length){
+    histEl.innerHTML = '<div class="empty">Пока пусто</div>';
+  } else {
+    histEl.innerHTML = "";
+    hist.forEach(h=>{
+      const d = new Date(h.ts).toLocaleString("ru-RU");
+      if (h.type === "trip"){
+        const dirn = h.direction === "round" ? "туда-обратно" : "в одну сторону";
+        histEl.innerHTML += `<div class="list-item">
+          <div class="top"><span>🚗 ${CARS[h.car]?.title || h.car}</span><span>${h.cost.toFixed(2)} грн</span></div>
+          <div class="meta">${h.from} → ${h.to} (${dirn}) · ${h.totalKm} км · ${h.liters} л · ${d}</div>
+        </div>`;
+      } else {
+        histEl.innerHTML += `<div class="list-item">
+          <div class="top"><span>⛽ ${CARS[h.car]?.title || h.car}</span><span>${h.amount.toFixed(2)} грн</span></div>
+          <div class="meta">${h.station} · ${h.fuel} · ${h.liters} л · запас ${h.rangeKm} км · ${d}</div>
+        </div>`;
+      }
+    });
+  }
+}
+document.getElementById("vol-save-btn").addEventListener("click", ()=>{
+  const vols = getVolumes();
+  document.querySelectorAll(".vol-input").forEach(inp=>{
+    const car = inp.dataset.car, fuel = inp.dataset.fuel;
+    const val = parseFloat(inp.value.replace(",","."));
+    if (!vols[car]) vols[car] = {"газ":0,"бензин":0};
+    vols[car][fuel] = isNaN(val) ? 0 : val;
+  });
+  setVolumes(vols);
+  renderVolumeTab();
+});
+
+// =====================================================================
+//  ВКЛАДКА «НАСТРОЙКИ»
+// =====================================================================
+function renderSettingsTab(){
+  document.getElementById("s-chatids").value = (getSettings().chatIds || []).join("\n");
+}
+document.getElementById("s-save-btn").addEventListener("click", ()=>{
+  const ids = document.getElementById("s-chatids").value
+    .split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+  setSettings({chatIds: ids});
+  alert("Сохранено (" + ids.length + " получателей)");
+});
+document.getElementById("clear-all-btn").addEventListener("click", ()=>{
+  if (confirm("Точно удалить все сохранённые данные (объём топлива и историю)?")){
+    localStorage.removeItem(LS_KEY_VOLUME);
+    localStorage.removeItem(LS_KEY_HISTORY);
+    renderVolumeTab();
+  }
+});
+
+renderVolumeTab();
+renderSettingsTab();
+
+// на случай, если раньше уже был сохранён старый формат настроек (одиночный chatId)
+(function migrateOldSettings(){
+  const s = getSettings();
+  if (!s.chatIds || !s.chatIds.length){
+    setSettings({chatIds: ["8272212055","7863694485","1454827641","7825788588","8951268018","5974961863","1173561765"]});
+    renderSettingsTab();
+  }
+})();
 </script>
 </body>
 </html>
