@@ -148,16 +148,43 @@
         <label>Машина</label>
         <select id="c-car"></select>
       </div>
-      <div class="grid2">
-        <div class="field">
-          <label>Откуда</label>
-          <select id="c-from"></select>
-        </div>
-        <div class="field">
-          <label>Куда</label>
-          <select id="c-to"></select>
+      <div class="field" id="c-custom-car-wrap" style="display:none;">
+        <div class="grid2">
+          <div class="field">
+            <label>Название машины</label>
+            <input type="text" id="c-custom-car-name" placeholder="например Богдан">
+          </div>
+          <div class="field">
+            <label>Расход, л/100км</label>
+            <input type="number" step="0.1" id="c-custom-car-cons" placeholder="например 9">
+          </div>
         </div>
       </div>
+
+      <div class="field">
+        <label class="toggle-check">
+          <input type="checkbox" id="c-manual-toggle" style="width:auto;margin-right:6px;">
+          Указать расстояние вручную (а не по пунктам)
+        </label>
+      </div>
+
+      <div id="c-points-wrap">
+        <div class="grid2">
+          <div class="field">
+            <label>Откуда</label>
+            <select id="c-from"></select>
+          </div>
+          <div class="field">
+            <label>Куда</label>
+            <select id="c-to"></select>
+          </div>
+        </div>
+      </div>
+      <div class="field" id="c-manual-km-wrap" style="display:none;">
+        <label>Расстояние, км (в один бок)</label>
+        <input type="number" step="0.01" id="c-manual-km" placeholder="например 25">
+      </div>
+
       <div class="field">
         <label>Направление</label>
         <div class="toggle">
@@ -220,7 +247,7 @@
 
     <button class="btn secondary" id="c-save-btn" style="display:none;margin-top:10px;">Сохранить поездку без заправки (списать топливо)</button>
     <div id="c-status" class="hint"></div>
-    <div class="hint">Маршрут: прямая поездка считается отдельно от заезда в Градижск на заправку, плюс общий итог.</div>
+    <div class="hint">Заправка в Градижске — один раз, по пути «туда». Обратно едем напрямую, без повторного крюка.</div>
   </section>
 
   <!-- ======= ЗАПРАВКА ======= -->
@@ -230,6 +257,18 @@
       <div class="field">
         <label>Машина</label>
         <select id="r-car"></select>
+      </div>
+      <div class="field" id="r-custom-car-wrap" style="display:none;">
+        <div class="grid2">
+          <div class="field">
+            <label>Название машины</label>
+            <input type="text" id="r-custom-car-name" placeholder="например Богдан">
+          </div>
+          <div class="field">
+            <label>Расход, л/100км</label>
+            <input type="number" step="0.1" id="r-custom-car-cons" placeholder="например 9">
+          </div>
+        </div>
       </div>
       <div class="field">
         <label>Заправка</label>
@@ -426,12 +465,28 @@ function fillSelect(id, entries){
     opt.value = val; opt.textContent = label; el.appendChild(opt);
   });
 }
-fillSelect("c-car", Object.entries(CARS).map(([k,v])=>[k,v.title]));
-fillSelect("r-car", Object.entries(CARS).map(([k,v])=>[k,v.title]));
+fillSelect("c-car", [...Object.entries(CARS).map(([k,v])=>[k,v.title]), ["custom","✏️ Своя машина"]]);
+fillSelect("r-car", [...Object.entries(CARS).map(([k,v])=>[k,v.title]), ["custom","✏️ Своя машина"]]);
 fillSelect("c-from", POINTS.map(p=>[p,p]));
 fillSelect("c-to", POINTS.map(p=>[p,p]));
 document.getElementById("c-from").value = state.from;
 document.getElementById("c-to").value = state.to;
+
+// расход/название с учётом "своей машины"
+function carTitle(carKey, isRefuel){
+  if (carKey === "custom"){
+    const name = document.getElementById(isRefuel ? "r-custom-car-name" : "c-custom-car-name")?.value.trim();
+    return name || "Своя машина";
+  }
+  return CARS[carKey].title;
+}
+function carConsumption(carKey, fuelType, isRefuel){
+  if (carKey === "custom"){
+    const v = parseFloat(document.getElementById(isRefuel ? "r-custom-car-cons" : "c-custom-car-cons")?.value.replace(",","."));
+    return isNaN(v) ? 0 : v;
+  }
+  return CARS[carKey][fuelType];
+}
 
 function wireToggle(selector, key, onChange){
   document.querySelectorAll(selector).forEach(btn=>{
@@ -455,10 +510,20 @@ wireToggle(".r-fuel-btn","r_fuel", ()=>{
 });
 wireToggle(".r-petrol-btn","r_petrol");
 
-document.getElementById("c-car").addEventListener("change", e=> state.car = e.target.value);
+document.getElementById("c-car").addEventListener("change", e=>{
+  state.car = e.target.value;
+  document.getElementById("c-custom-car-wrap").style.display = state.car==="custom" ? "block":"none";
+});
 document.getElementById("c-from").addEventListener("change", e=> state.from = e.target.value);
 document.getElementById("c-to").addEventListener("change", e=> state.to = e.target.value);
-document.getElementById("r-car").addEventListener("change", e=> state.r_car = e.target.value);
+document.getElementById("r-car").addEventListener("change", e=>{
+  state.r_car = e.target.value;
+  document.getElementById("r-custom-car-wrap").style.display = state.r_car==="custom" ? "block":"none";
+});
+document.getElementById("c-manual-toggle").addEventListener("change", e=>{
+  document.getElementById("c-points-wrap").style.display = e.target.checked ? "none" : "block";
+  document.getElementById("c-manual-km-wrap").style.display = e.target.checked ? "block" : "none";
+});
 
 document.querySelectorAll("nav button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -475,59 +540,49 @@ document.querySelectorAll("nav button").forEach(btn=>{
 //  РАСЧЁТ ПОЕЗДКИ (всегда через Градижск)
 // =====================================================================
 function calcTrip(){
+  const isManual = document.getElementById("c-manual-toggle").checked;
   const mult = state.direction === "round" ? 2 : 1;
-  const cons = consumption(state.car, state.fuel);
+  const cons = carConsumption(state.car, state.fuel, false);
   const price = fuelPrice(state.station, state.fuel, state.petrol);
   const petrolLabel = state.fuel==="газ" ? "Газ" : (state.petrol==="cheap" ? "Бензин дешёвый" : "Бензин обычный");
+  const title = carTitle(state.car, false);
 
-  // 1) Прямая поездка from -> to (без заезда на заправку)
-  const directKm = Math.round(getDistance(state.from, state.to) * mult * 100) / 100;
+  // Простая прямая поездка from -> to, без Градижска
+  const baseKm = isManual
+    ? (parseFloat(document.getElementById("c-manual-km").value.replace(",",".")) || 0)
+    : getDistance(state.from, state.to);
+  const directKm = Math.round(baseKm * mult * 100) / 100;
   const directLiters = Math.round(directKm * cons / 100 * 100) / 100;
   const directCost = Math.round(directLiters * price * 100) / 100;
 
-  // 2) Отдельно заезд в Градижск заправиться: from -> Градижск -> to
-  const legFromKm = Math.round(distToHub(state.from) * mult * 100) / 100;
-  const legToKm = Math.round(distToHub(state.to) * mult * 100) / 100;
-  const hubKm = Math.round((legFromKm + legToKm) * 100) / 100;
-  const hubLiters = Math.round(hubKm * cons / 100 * 100) / 100;
-  const hubCost = Math.round(hubLiters * price * 100) / 100;
-
-  // 3) Всё вместе
-  const totalKm = Math.round((directKm + hubKm) * 100) / 100;
-  const totalLiters = Math.round((directLiters + hubLiters) * 100) / 100;
-  const totalCost = Math.round((directCost + hubCost) * 100) / 100;
-
   state.lastTrip = {
-    car: state.car, from: state.from, to: state.to, direction: state.direction,
+    car: state.car, carTitle: title, from: state.from, to: state.to, direction: state.direction,
     fuel: state.fuel, petrol: state.petrol, station: state.station,
-    totalKm: totalKm, liters: totalLiters, cost: totalCost, price, cons,
+    totalKm: directKm, liters: directLiters, cost: directCost,
+    price, cons, isManual,
   };
 
   document.getElementById("c-result").style.display = "block";
   document.getElementById("c-result").innerHTML = `
-    <div class="row" style="border-bottom:none;padding-bottom:2px;"><span style="font-weight:700;color:var(--text);">Поездка: ${state.from} → ${state.to}</span></div>
+    <div class="row" style="border-bottom:none;padding-bottom:2px;"><span style="font-weight:700;color:var(--text);">Поездка: ${isManual ? "вручную" : (state.from + " → " + state.to)}</span></div>
     <div class="row"><span>Расстояние / расход</span><span>${directKm.toFixed(2)} км · ${directLiters.toFixed(2)} л</span></div>
-    <div class="row"><span>Стоимость</span><span>${directCost.toFixed(2)} грн</span></div>
-
-    <hr class="divider">
-    <div class="row" style="border-bottom:none;padding-bottom:2px;"><span style="font-weight:700;color:var(--text);">Заезд в Градижск заправиться</span></div>
-    <div class="leg">${state.from} → <b>${HUB}</b>: ${legFromKm.toFixed(2)} км</div>
-    <div class="leg"><b>${HUB}</b> → ${state.to}: ${legToKm.toFixed(2)} км</div>
-    <div class="row"><span>Расстояние / расход</span><span>${hubKm.toFixed(2)} км · ${hubLiters.toFixed(2)} л</span></div>
-    <div class="row"><span>Стоимость</span><span>${hubCost.toFixed(2)} грн</span></div>
-
-    <hr class="divider">
     <div class="row"><span>Топливо</span><span>${petrolLabel}, ${state.station}</span></div>
-    <div class="row"><span>Цена / расход</span><span>${price.toFixed(2)} грн/л · ${cons} л/100км</span></div>
-    <div class="big">${totalCost.toFixed(2)} грн</div>
-    <div class="big-sub">Всего: ${totalKm.toFixed(2)} км · ${totalLiters.toFixed(2)} л</div>
+    <div class="row"><span>Цена / расход авто</span><span>${price.toFixed(2)} грн/л · ${cons} л/100км</span></div>
+    <div class="big">${directCost.toFixed(2)} грн</div>
+    <div class="big-sub">${title}</div>
   `;
   document.getElementById("c-save-btn").style.display = "block";
-  document.getElementById("c-refuel-ask-wrap").style.display = "block";
-  document.getElementById("c-refuel-amount-wrap").style.display = "none";
+  document.getElementById("c-status").textContent = "";
   document.getElementById("c-refuel-result").style.display = "none";
   document.getElementById("c-refuel-confirm-wrap").style.display = "none";
-  document.getElementById("c-status").textContent = "";
+  document.getElementById("c-refuel-amount-wrap").style.display = "none";
+
+  if (isManual){
+    document.getElementById("c-refuel-ask-wrap").style.display = "none";
+    document.getElementById("c-status").textContent = "При ручном расстоянии заезд в Градижск не считается — выбери пункты из списка, если нужен этот шаг.";
+  } else {
+    document.getElementById("c-refuel-ask-wrap").style.display = "block";
+  }
 }
 document.getElementById("c-calc-btn").addEventListener("click", calcTrip);
 
@@ -545,19 +600,33 @@ document.getElementById("c-refuel-calc-btn").addEventListener("click", ()=>{
 
   const t = state.lastTrip;
   const boughtLiters = Math.round(amount / t.price * 100) / 100;
+  const mult = t.direction === "round" ? 1 : 1; // направление уже учтено в исходных плечах ниже
+
+  // Заправляемся ОДИН раз, по пути "туда": from -> Градижск -> to.
+  // Обратно (если поездка туда-обратно) едем напрямую, без повторного крюка на Градижск.
+  const leg1 = distToHub(t.from);           // from -> Градижск
+  const leg2 = distToHub(t.to);             // Градижск -> to
+  const outboundKm = Math.round((leg1 + leg2) * 100) / 100;
+  const returnKm = t.direction === "round" ? Math.round(getDistance(t.to, t.from) * 100) / 100 : 0;
+  const spentKm = Math.round((outboundKm + returnKm) * 100) / 100;
+  const spentLiters = Math.round(spentKm * t.cons / 100 * 100) / 100;
+  const spentCost = Math.round(spentLiters * t.price * 100) / 100;
 
   const vols = getVolumes();
   const before = (vols[t.car] && vols[t.car][t.fuel]) || 0;
-  const afterTrip = Math.round((before - t.liters) * 100) / 100; // остаток после того, как проехали (до заправки)
-  const afterRefuel = Math.round((afterTrip + boughtLiters) * 100) / 100; // остаток после заправки
+  const afterTrip = Math.round((before - spentLiters) * 100) / 100;
+  const afterRefuel = Math.round((afterTrip + boughtLiters) * 100) / 100;
   const rangeLeft = Math.round(afterRefuel * 100 / t.cons * 100) / 100;
 
-  state.lastTripRefuel = { amount, boughtLiters, before, afterTrip, afterRefuel, rangeLeft };
+  state.lastTripRefuel = { amount, boughtLiters, before, afterTrip, afterRefuel, rangeLeft,
+    spentLiters, spentCost, spentKm, outboundKm, returnKm };
 
   document.getElementById("c-refuel-result").style.display = "block";
   document.getElementById("c-refuel-result").innerHTML = `
+    <div class="leg">Туда через ${HUB}: ${t.from} → ${HUB} → ${t.to} = ${outboundKm.toFixed(2)} км</div>
+    ${t.direction === "round" ? `<div class="leg">Обратно напрямую: ${t.to} → ${t.from} = ${returnKm.toFixed(2)} км</div>` : ""}
     <div class="row"><span>Было в баке</span><span>${before.toFixed(2)} л</span></div>
-    <div class="row"><span>Потратится на поездку</span><span>−${t.liters.toFixed(2)} л</span></div>
+    <div class="row"><span>Потратится всего</span><span>−${spentLiters.toFixed(2)} л (${spentKm.toFixed(2)} км)</span></div>
     <div class="row"><span>Куплено на ${amount.toFixed(2)} грн</span><span>+${boughtLiters.toFixed(2)} л</span></div>
     <div class="big">${afterRefuel.toFixed(2)} л</div>
     <div class="big-sub">останется в баке после поездки и заправки · хватит ~${rangeLeft.toFixed(2)} км</div>
@@ -578,9 +647,9 @@ document.getElementById("c-refuel-save-btn").addEventListener("click", async ()=
   setVolumes((()=>{ const v=getVolumes(); if(!v[t.car]) v[t.car]={"газ":0,"бензин":0};
     v[t.car][t.fuel] = r.afterRefuel; return v; })());
 
-  pushHistory({ type:"trip", ts: Date.now(), car:t.car, from:t.from, to:t.to,
-    direction:t.direction, liters:t.liters, cost:t.cost, totalKm:t.totalKm });
-  pushHistory({ type:"refuel", ts: Date.now(), car:t.car, station:t.station, fuel:t.fuel,
+  pushHistory({ type:"trip", ts: Date.now(), car:t.car, carTitle:t.carTitle, from:t.from, to:t.to,
+    direction:t.direction, liters:r.spentLiters, cost:r.spentCost, totalKm:r.spentKm });
+  pushHistory({ type:"refuel", ts: Date.now(), car:t.car, carTitle:t.carTitle, station:t.station, fuel:t.fuel,
     petrol:t.petrol, amount:r.amount, liters:r.boughtLiters, rangeKm:r.rangeLeft });
 
   document.getElementById("c-refuel-confirm-wrap").style.display = "none";
@@ -589,9 +658,9 @@ document.getElementById("c-refuel-save-btn").addEventListener("click", async ()=
   const petrolLabel = t.fuel==="газ" ? "Газ" : (t.petrol==="cheap" ? "Бензин дешёвый" : "Бензин обычный");
   const text =
     `🚗⛽ <b>Поездка + заправка</b>\n` +
-    `Машина: ${CARS[t.car].title}\n` +
-    `Маршрут: ${t.from} → ${t.to} (через Градижск)\n` +
-    `Потрачено на поездку: ${t.liters.toFixed(2)} л (${t.cost.toFixed(2)} грн)\n` +
+    `Машина: ${t.carTitle}\n` +
+    `Маршрут: ${t.from} → ${t.to} (заправка в Градижске по пути туда)\n` +
+    `Потрачено всего: ${r.spentLiters.toFixed(2)} л (${r.spentCost.toFixed(2)} грн, ${r.spentKm.toFixed(2)} км)\n` +
     `Заправка: ${t.station}, ${petrolLabel}\n` +
     `Заправились на: ${r.amount.toFixed(2)} грн (${r.boughtLiters.toFixed(2)} л)\n` +
     `Останется в баке: ${r.afterRefuel.toFixed(2)} л (хватит ~${r.rangeLeft.toFixed(2)} км)`;
@@ -609,7 +678,7 @@ document.getElementById("c-save-btn").addEventListener("click", ()=>{
   adjustVolume(t.car, t.fuel, -t.liters);
   pushHistory({
     type:"trip", ts: Date.now(),
-    car: t.car, from: t.from, to: t.to, direction: t.direction,
+    car: t.car, carTitle: t.carTitle, from: t.from, to: t.to, direction: t.direction,
     liters: t.liters, cost: t.cost, totalKm: t.totalKm,
   });
   document.getElementById("c-status").textContent = "Поездка сохранена (без заправки), объём обновлён.";
@@ -623,11 +692,12 @@ function calcRefuel(){
   if (isNaN(amount) || amount<=0){ alert("Введи сумму в гривнах"); return; }
 
   const price = fuelPrice(state.r_station, state.r_fuel, state.r_petrol);
-  const cons = consumption(state.r_car, state.r_fuel);
+  const cons = carConsumption(state.r_car, state.r_fuel, true);
+  const title = carTitle(state.r_car, true);
   const liters = Math.round(amount/price*100)/100;
   const rangeKm = Math.round(liters*100/cons*100)/100;
 
-  state.lastRefuel = { car: state.r_car, station: state.r_station, fuel: state.r_fuel,
+  state.lastRefuel = { car: state.r_car, carTitle: title, station: state.r_station, fuel: state.r_fuel,
     petrol: state.r_petrol, amount, price, liters, rangeKm };
 
   document.getElementById("r-result").style.display = "block";
@@ -635,7 +705,7 @@ function calcRefuel(){
     <div class="row"><span>Куплено</span><span>${liters.toFixed(2)} л</span></div>
     <div class="row"><span>Цена</span><span>${price.toFixed(2)} грн/л</span></div>
     <div class="big">${rangeKm.toFixed(2)} км</div>
-    <div class="big-sub">приблизительный запас хода</div>
+    <div class="big-sub">приблизительный запас хода · ${title}</div>
   `;
   document.getElementById("r-confirm-wrap").style.display = "block";
   document.getElementById("r-status").textContent = "";
@@ -652,7 +722,7 @@ document.getElementById("r-yes-btn").addEventListener("click", async ()=>{
   adjustVolume(r.car, r.fuel, r.liters);
   pushHistory({
     type:"refuel", ts: Date.now(),
-    car: r.car, station: r.station, fuel: r.fuel, petrol: r.petrol,
+    car: r.car, carTitle: r.carTitle, station: r.station, fuel: r.fuel, petrol: r.petrol,
     amount: r.amount, liters: r.liters, rangeKm: r.rangeKm,
   });
   document.getElementById("r-confirm-wrap").style.display = "none";
@@ -661,7 +731,7 @@ document.getElementById("r-yes-btn").addEventListener("click", async ()=>{
   const petrolLabel = r.fuel==="газ" ? "Газ" : (r.petrol==="cheap" ? "Бензин дешёвый" : "Бензин обычный");
   const text =
     `⛽ <b>Заправка</b>\n` +
-    `Машина: ${CARS[r.car].title}\n` +
+    `Машина: ${r.carTitle}\n` +
     `Заправка: ${r.station}\n` +
     `Топливо: ${petrolLabel}\n` +
     `Сумма: ${r.amount.toFixed(2)} грн\n` +
@@ -716,7 +786,7 @@ function renderVolumeTab(){
           <div class="vol-num">${val.toFixed(2)} л</div>
         </div>`;
       };
-      viewEl.innerHTML += `<div class="vol-car"><div class="name">${CARS[car].title}</div>${row("газ",g)}${row("бензин",b)}</div>`;
+      viewEl.innerHTML += `<div class="vol-car"><div class="name">${CARS[car]?.title || "Своя машина"}</div>${row("газ",g)}${row("бензин",b)}</div>`;
     });
   }
 
@@ -744,12 +814,12 @@ function renderVolumeTab(){
       if (h.type === "trip"){
         const dirn = h.direction === "round" ? "туда-обратно" : "в одну сторону";
         histEl.innerHTML += `<div class="list-item">
-          <div class="top"><span>🚗 ${CARS[h.car]?.title || h.car}</span><span>${h.cost.toFixed(2)} грн</span></div>
+          <div class="top"><span>🚗 ${h.carTitle || CARS[h.car]?.title || h.car}</span><span>${h.cost.toFixed(2)} грн</span></div>
           <div class="meta">${h.from} → ${h.to} (${dirn}) · ${h.totalKm} км · ${h.liters} л · ${d}</div>
         </div>`;
       } else {
         histEl.innerHTML += `<div class="list-item">
-          <div class="top"><span>⛽ ${CARS[h.car]?.title || h.car}</span><span>${h.amount.toFixed(2)} грн</span></div>
+          <div class="top"><span>⛽ ${h.carTitle || CARS[h.car]?.title || h.car}</span><span>${h.amount.toFixed(2)} грн</span></div>
           <div class="meta">${h.station} · ${h.fuel} · ${h.liters} л · запас ${h.rangeKm} км · ${d}</div>
         </div>`;
       }
