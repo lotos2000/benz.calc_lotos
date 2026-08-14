@@ -115,6 +115,14 @@
   .badge.err{background:rgba(255,93,93,.15);color:var(--red);}
 
   .divider{border:none;border-top:1px solid var(--border-soft);margin:16px 0;}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat-box{background:var(--surface3);border:1px solid var(--border);border-radius:14px;
+      padding:14px;text-align:center;}
+  .stat-box .num{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--amber-soft);}
+  .stat-box .lbl{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .fun-line{background:var(--surface3);border:1px dashed var(--border);border-radius:12px;
+      padding:10px 13px;margin-top:10px;font-size:12.5px;color:var(--text-dim);}
 </style>
 </head>
 <body>
@@ -312,6 +320,10 @@
 
   <!-- ======= ТОПЛИВО ======= -->
   <section class="panel" id="panel-volume">
+    <div class="card" id="stats-card">
+      <h2>За всё время</h2>
+      <div id="stats-view"></div>
+    </div>
     <div class="card">
       <h2>Текущий объём в машинах</h2>
       <div id="volume-view"></div>
@@ -400,6 +412,7 @@ setDist("Градижск","Максимовка",10.5);
 setDist("Погребы","Кременчуг",24.6);
 setDist("Погребы","Максимовка",21.2);
 setDist("Максимовка","Кременчуг",29.3);
+
 function getDistance(a,b){
   if (a===b) return 0;
   return DISTANCES[dkey(a,b)] ?? 0; // 0, если пара ещё не задана - пришли мне точные км, впишу
@@ -567,6 +580,7 @@ function calcTrip(){
     <div class="row"><span>Расстояние / расход</span><span>${directKm.toFixed(2)} км · ${directLiters.toFixed(2)} л</span></div>
     <div class="row"><span>Топливо</span><span>${petrolLabel}, ${state.station}</span></div>
     <div class="row"><span>Цена / расход авто</span><span>${price.toFixed(2)} грн/л · ${cons} л/100км</span></div>
+    <div class="row"><span>Стоимость 1 км пути</span><span>${directKm>0 ? (directCost/directKm).toFixed(2) : "0.00"} грн/км</span></div>
     <div class="big">${directCost.toFixed(2)} грн</div>
     <div class="big-sub">${title}</div>
   `;
@@ -629,6 +643,7 @@ document.getElementById("c-refuel-calc-btn").addEventListener("click", ()=>{
     <div class="row"><span>Куплено на ${amount.toFixed(2)} грн</span><span>+${boughtLiters.toFixed(2)} л</span></div>
     <div class="big">${afterRefuel.toFixed(2)} л</div>
     <div class="big-sub">останется в баке после поездки и заправки · хватит ~${rangeLeft.toFixed(2)} км</div>
+    ${funEquivalent(amount) ? `<div class="fun-line">${funEquivalent(amount)}</div>` : ""}
   `;
   document.getElementById("c-refuel-confirm-wrap").style.display = "grid";
 });
@@ -705,6 +720,7 @@ function calcRefuel(){
     <div class="row"><span>Цена</span><span>${price.toFixed(2)} грн/л</span></div>
     <div class="big">${rangeKm.toFixed(2)} км</div>
     <div class="big-sub">приблизительный запас хода · ${title}</div>
+    ${funEquivalent(amount) ? `<div class="fun-line">${funEquivalent(amount)}</div>` : ""}
   `;
   document.getElementById("r-confirm-wrap").style.display = "block";
   document.getElementById("r-status").textContent = "";
@@ -766,7 +782,61 @@ async function sendTelegramReport(text){
 // =====================================================================
 //  ВКЛАДКА «ТОПЛИВО»
 // =====================================================================
+const FUN_FACTS = [
+  {name:"чашка кофе ☕", price:50},
+  {name:"буханка хлеба 🍞", price:25},
+  {name:"шаурма 🌯", price:90},
+  {name:"поход в кино 🎬", price:150},
+  {name:"пачка сигарет 🚬", price:75},
+];
+function funEquivalent(amount){
+  // берём случайный, но стабильный (по сумме) вариант, чтобы не скакало при каждом ререндере
+  const item = FUN_FACTS[Math.floor(amount) % FUN_FACTS.length];
+  const count = Math.floor(amount / item.price);
+  if (count < 1) return "";
+  return `На эти деньги — примерно ${count} × ${item.name}`;
+}
+
 function renderVolumeTab(){
+  const hist = getHistory();
+  const trips = hist.filter(h=>h.type==="trip");
+  const refuels = hist.filter(h=>h.type==="refuel");
+  const totalKm = Math.round(trips.reduce((s,t)=>s+(t.totalKm||0),0)*100)/100;
+  const totalSpentTrips = trips.reduce((s,t)=>s+(t.cost||0),0);
+  const totalSpentRefuels = refuels.reduce((s,r)=>s+(r.amount||0),0);
+  const totalSpent = Math.round((totalSpentTrips+totalSpentRefuels)*100)/100;
+  const totalLitersBought = Math.round(refuels.reduce((s,r)=>s+(r.liters||0),0)*100)/100;
+  const avgCostPerKm = totalKm > 0 ? Math.round((totalSpentTrips/totalKm)*100)/100 : 0;
+
+  const statsEl = document.getElementById("stats-view");
+  if (!trips.length && !refuels.length){
+    statsEl.innerHTML = '<div class="empty">Пока пусто — тут появится статистика после первых поездок</div>';
+  } else {
+    // рекорды
+    const longestTrip = trips.reduce((a,t)=> (!a || t.totalKm>a.totalKm) ? t : a, null);
+    const priciestRefuel = refuels.reduce((a,r)=> (!a || r.amount>a.amount) ? r : a, null);
+    const cheapestKm = trips.filter(t=>t.totalKm>0)
+      .map(t=>({...t, perKm: t.cost/t.totalKm}))
+      .sort((a,b)=>a.perKm-b.perKm)[0];
+
+    let recordsHtml = "";
+    if (longestTrip) recordsHtml += `<div class="fun-line">🏁 Самая дальняя поездка: ${longestTrip.from} → ${longestTrip.to}, ${longestTrip.totalKm.toFixed(1)} км</div>`;
+    if (priciestRefuel) recordsHtml += `<div class="fun-line">💸 Самая дорогая заправка: ${priciestRefuel.amount.toFixed(0)} грн (${priciestRefuel.carTitle || priciestRefuel.car})</div>`;
+    if (cheapestKm) recordsHtml += `<div class="fun-line">🏆 Самый дешёвый км: ${cheapestKm.perKm.toFixed(2)} грн/км (${cheapestKm.from} → ${cheapestKm.to})</div>`;
+
+    statsEl.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num">${totalKm.toFixed(0)}</div><div class="lbl">км всего проехано</div></div>
+        <div class="stat-box"><div class="num">${totalSpent.toFixed(0)}</div><div class="lbl">грн всего потрачено</div></div>
+        <div class="stat-box"><div class="num">${totalLitersBought.toFixed(1)}</div><div class="lbl">л всего залито</div></div>
+        <div class="stat-box"><div class="num">${avgCostPerKm.toFixed(2)}</div><div class="lbl">грн / км в среднем</div></div>
+      </div>
+      ${totalKm > 40000 ? '<div class="fun-line">🌍 Это уже сравнимо с длиной экватора Земли!</div>' :
+        totalKm > 1000 ? '<div class="fun-line">🚗 Уже прилично накатали — за такое расстояние можно было бы пересечь всю Украину и не один раз</div>' : ""}
+      ${recordsHtml}
+    `;
+  }
+
   const vols = getVolumes();
   const viewEl = document.getElementById("volume-view");
   const carsWithData = Object.keys(CARS).filter(c => vols[c]);
@@ -803,7 +873,6 @@ function renderVolumeTab(){
   });
 
   const histEl = document.getElementById("history-list");
-  const hist = getHistory();
   if (!hist.length){
     histEl.innerHTML = '<div class="empty">Пока пусто</div>';
   } else {
